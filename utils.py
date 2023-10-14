@@ -21,10 +21,11 @@ def organize_type(cwd, downloads_dir, element):
         except OSError as error:
             print(error)
 
-    for file in os.listdir():
-        for element in extentions:
-            ext = element[0]
-            if ext in file:
-                src_path = os.path.join(cwd, file)
-                dst_path = os.path.join(type_dir, file)
-                os.rename(src_path, dst_path)
+    for dir in os.listdir():
+        if os.path.isfile(dir):
+            for element in extentions:
+                ext = element[0]
+                if ext in dir:
+                    src_path = os.path.join(cwd, dir)
+                    dst_path = os.path.join(type_dir, dir)
+                    os.rename(src_path, dst_path)
