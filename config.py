@@ -5,10 +5,11 @@ sources = [
 ]
 destinations = [
     'videos',
-    'audio',
-    'archive',
-    'program',
+    'audios',
+    'archives',
+    'programs',
     'documents',
     'images',
-
+    'folders',
+    'other'
 ]
