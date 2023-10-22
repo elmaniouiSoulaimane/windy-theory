@@ -17,12 +17,12 @@ def organize_type(element, cwd, folders_dir, other_dir):
                     src_path = os.path.join(cwd, dir)
                     dst_path = os.path.join(type_dir, dir)
                     os.rename(src_path, dst_path)
-        elif os.path.isdir(dir):
+        elif os.path.isdir(dir): #create folders directory here ?
             if not any(name in dir for name in destinations):
                 src_path = os.path.join(cwd, dir)
                 dst_path = os.path.join(folders_dir, dir)
                 os.rename(src_path, dst_path)
-        else:
+        else: #create other directory here ?
             src_path = os.path.join(cwd, dir)
             dst_path = os.path.join(other_dir, dir)
             os.rename(src_path, dst_path)
@@ -42,7 +42,9 @@ def make_dir(name, cwd): #add src dir as an argument
         except OSError as error:
             print(error)
             return None
-    
-    
-    
+
+def find_dir(start_dir, name_dir):
+    for root, dirs, files in os.walk(start_dir, topdown=True, onerror=None, followlinks=False):
+        if name_dir in dirs:
+            return os.path.join(root, name_dir)
     
