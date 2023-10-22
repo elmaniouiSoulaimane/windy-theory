@@ -17,12 +17,14 @@ def organize_type(element, cwd, folders_dir, other_dir):
                     src_path = os.path.join(cwd, dir)
                     dst_path = os.path.join(type_dir, dir)
                     os.rename(src_path, dst_path)
-        elif os.path.isdir(dir): #create folders directory here ?
-            if not any(name in dir for name in destinations):
+        elif os.path.isdir(dir):
+            make_dir('folders', cwd)
+            if not any(name in dir for name in destinations): #here checking if the dir I'm about to organize is any one of the dir for the types
                 src_path = os.path.join(cwd, dir)
                 dst_path = os.path.join(folders_dir, dir)
                 os.rename(src_path, dst_path)
-        else: #create other directory here ?
+        else:
+            make_dir('other', cwd)
             src_path = os.path.join(cwd, dir)
             dst_path = os.path.join(other_dir, dir)
             os.rename(src_path, dst_path)
