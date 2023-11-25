@@ -1,29 +1,40 @@
 import os
-from config import *
+from constants import *
 
+
+#this needs to be optimized
+#currently it loops through all the types
+#it should work on the types that are inside the cwd
 def organize_type(element, cwd, folders_dir, other_dir):
     type = element['type']
     extentions = element['extensions']
 
-    print(f"Organizing {type}")
+    print(f"Starting to organize \"{type}\".")
 
+    #creating a directory for the current type
     type_dir = make_dir(type, cwd)
 
-    for dir in os.listdir():
-        if os.path.isfile(dir):
+    for entry in os.listdir():
+        if os.path.isfile(entry):
             for element in extentions:
                 ext = element[0]
-                if ext in dir:
-                    src_path = os.path.join(cwd, dir)
-                    dst_path = os.path.join(type_dir, dir)
-                    os.rename(src_path, dst_path)
-        elif os.path.isdir(dir):
+                if ext in entry:
+                    src_path = os.path.join(cwd, entry)
+                    dst_path = os.path.join(type_dir, entry)
+                    #sending the current entry to the appropriate folder
+                    os.rename(src_path, dst_path) 
+        elif os.path.isdir(entry):
+            #folders folder is already created, why create it again
             make_dir('folders', cwd)
-            if not any(name in dir for name in destinations): #here checking if the dir I'm about to organize is any one of the dir for the types
+            
+            #here checking if the entry I'm about to organize is any one of the dir for the types
+            #destinations is a constant in constants file
+            if not any(name in entry for name in DESTINATIONS): 
                 src_path = os.path.join(cwd, dir)
                 dst_path = os.path.join(folders_dir, dir)
                 os.rename(src_path, dst_path)
         else:
+            #other folder is already created, why create it again
             make_dir('other', cwd)
             src_path = os.path.join(cwd, dir)
             dst_path = os.path.join(other_dir, dir)
@@ -45,8 +56,13 @@ def make_dir(name, cwd): #add src dir as an argument
             print(error)
             return None
 
-def find_dir(start_dir, name_dir):
-    for root, dirs, files in os.walk(start_dir, topdown=True, onerror=None, followlinks=False):
-        if name_dir in dirs:
-            return os.path.join(root, name_dir)
+def find_dir(target_name):
+    #what if multiple directories exists in the computer with the same name ?
+    found_dirs = list()
+    for root, dirs, files in os.walk('/', topdown=True, onerror=None, followlinks=False):
+        if target_name in dirs:
+            wanted_dir_path = os.path.join(root, target_name)
+            found_dirs.append(wanted_dir_path)
+    
+    return found_dirs
     
