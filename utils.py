@@ -2,26 +2,27 @@ import os
 from constants import *
 
 def organize_entry(entry):
-    entry_src_path = os.path.join(os.getcwd(), entry)
+    source = os.path.join(os.getcwd(), entry)
+    destination = source #if there's no destination that suits the entry, leave it there.
 
     if os.path.isfile(entry):
         type = getTypeByEntry(entry)
-        type_dir = make_dir(type)
-        entry_dst_path = os.path.join(type_dir, entry)
-        os.rename(entry_src_path, entry_dst_path)
+        if type is not None:
+            type_dir = make_dir(type)
+            destination = os.path.join(type_dir, entry)
 
     elif os.path.isdir(entry):
         folders_dir = make_dir('folders')
-        #here checking if the entry I'm about to organize is any one of the dir for the types
-        #destinations is a constant in constants file
-        if not any((name in entry for name in DESTINATIONS) or (name in entry for name in SYS_DIRS)): 
-            entry_dst_path = os.path.join(folders_dir, entry)
-            os.rename(entry_src_path, entry_dst_path)
+
+        #must also check if the folder I am about to organize is not among the default user dirs
+        if not any(name in entry for name in DESTINATIONS): 
+            destination = os.path.join(folders_dir, entry)
 
     else:
         other_dir = make_dir('other')
-        entry_dst_path = os.path.join(other_dir, entry)
-        os.rename(entry_src_path, entry_dst_path)
+        destination = os.path.join(other_dir, entry)
+    
+    os.rename(source, destination)
 
 def make_dir(name):
     new_dir_path = os.path.join(os.getcwd(), name)
@@ -36,12 +37,14 @@ def make_dir(name):
             print(error)
             return None
 
-def find_dir(target_name):
+def find_dir(target):
     found_dirs = list()
-    for root, dirs, files in os.walk('/home/soulaiman', topdown=True, onerror=None, followlinks=False):
-        if target_name in dirs:
-            wanted_dir_path = os.path.join(root, target_name)
-            found_dirs.append(wanted_dir_path)
+
+    #must get user's name
+    for root, dirs, files in os.walk('/home/soulaiman/', topdown=True, onerror=None, followlinks=False):
+        if target in dirs:
+            target_dir_path = os.path.join(root, target)
+            found_dirs.append(target_dir_path)
     
     return found_dirs
 
@@ -51,3 +54,4 @@ def getTypeByEntry(entry):
                  ((extension[0] in entry) or ((extension[0].upper() in entry))) 
                  for extension in dict.get("extensions", [])):
                     return dict.get("type")
+    return None

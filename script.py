@@ -31,7 +31,7 @@ def main():
         if os.getcwd() is not target_path:
             os.chdir(target_path)
     
-        #oraginzing elements only if they exist
+        #organizing elements only if they exist
         if len(os.listdir()):
             for entry in os.listdir():
                 organize_entry(entry)

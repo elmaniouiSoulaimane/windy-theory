@@ -14,13 +14,6 @@ DESTINATIONS = [
     'other'
 ]
 
-SYS_DIRS = [
-    'bin',
-    'sbin',
-    'lib',
-    'usr'
-]
-
 FILE_TYPES_AND_EXTENSIONS = [
     {
         "type": "videos",
