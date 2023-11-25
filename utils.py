@@ -5,7 +5,7 @@ from constants import *
 #this needs to be optimized
 #currently it loops through all the types
 #it should work on the types that are inside the cwd
-def organize_type(element, cwd, folders_dir, other_dir):
+def organize_type(element, cwd):
     type = element['type']
     extentions = element['extensions']
 
@@ -25,7 +25,7 @@ def organize_type(element, cwd, folders_dir, other_dir):
                     os.rename(src_path, dst_path) 
         elif os.path.isdir(entry):
             #folders folder is already created, why create it again
-            make_dir('folders', cwd)
+            folders_dir = make_dir('folders', cwd)
             
             #here checking if the entry I'm about to organize is any one of the dir for the types
             #destinations is a constant in constants file
@@ -35,7 +35,7 @@ def organize_type(element, cwd, folders_dir, other_dir):
                 os.rename(src_path, dst_path)
         else:
             #other folder is already created, why create it again
-            make_dir('other', cwd)
+            other_dir = make_dir('other', cwd)
             src_path = os.path.join(cwd, dir)
             dst_path = os.path.join(other_dir, dir)
             os.rename(src_path, dst_path)

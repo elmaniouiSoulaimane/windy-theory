@@ -32,12 +32,9 @@ def main():
         if cwd is not target_path:
             os.chdir(target_path)
             cwd = os.getcwd()
-        
-        folders_dir = make_dir('folders', cwd) #why do I need to create this ?
-        other_dir = make_dir('other', cwd) #why do I need to create this ?
 
         for element in files_data:
-            organize_type(element, cwd, folders_dir, other_dir)
+            organize_type(element, cwd)
 
 if __name__ == "__main__":
     main()
