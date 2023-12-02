@@ -1,32 +1,9 @@
 import os
 from constants import *
+import pyinputplus as pyip
 
-def organize_entry(entry):
-    source = os.path.join(os.getcwd(), entry)
-    destination = source #if there's no destination that suits the entry, leave it there.
-
-    if os.path.isfile(entry):
-        type = getTypeByEntry(entry)
-        if type is not None:
-            type_dir = make_dir(type)
-            destination = os.path.join(type_dir, entry)
-
-    elif os.path.isdir(entry):
-        folders_dir = make_dir('folders')
-
-        #TO DO: must also check if the folder I am about to organize is not among the default user dirs
-        if not any(name in entry for name in DESTINATIONS): 
-            destination = os.path.join(folders_dir, entry)
-
-    else:
-        other_dir = make_dir('other')
-        destination = os.path.join(other_dir, entry)
-
-    if source != destination:
-        os.rename(source, destination)
-        return entry
-    else:
-        return None
+#LOCAL IMPORTS
+from tasks.organize import Organize
 
 def make_dir(name):
     new_dir_path = os.path.join(os.getcwd(), name)
@@ -41,18 +18,20 @@ def make_dir(name):
             print(error)
             return None
 
-def find_dir(target):
+
+def get_target_dir_paths(target_dir):
     found_dirs = list()
 
-    #must get user's name
+    #TO DO: must get user's name
     for root, dirs, files in os.walk('/home/soulaiman/', topdown=True, onerror=None, followlinks=False):
-        if target in dirs:
-            target_dir_path = os.path.join(root, target)
+        if target_dir in dirs:
+            target_dir_path = os.path.join(root, target_dir)
             found_dirs.append(target_dir_path)
     
     return found_dirs
 
-def getTypeByEntry(entry):
+
+def get_entry_type(entry):
     for dict in FILE_TYPES_AND_EXTENSIONS:
             if any (
                  ((extension[0] in entry) or ((extension[0].upper() in entry))) 
@@ -60,25 +39,30 @@ def getTypeByEntry(entry):
                     return dict.get("type")
     return None
 
-def organize(target_name, target_path):
-    os.chdir(target_path)
-    
-    #organizing elements only if they exist
-    if len(os.listdir()):
-        organized_entries = list()
-        for entry in os.listdir():
-            organized_entry = organize_entry(entry)
-            if organize_entry is not None:
-                organized_entries.append(organized_entry)
 
-        #only display this message if there was something to be organized to begin with
-        if len(organized_entries):
-            print(f"(i) The following entries have been organized successfully!")
-            #TO DO: the following loop must be put in a function!
-            for entry in organized_entries:
-                print(f"{entry}")
-        else:
-            print(f"(i) Looks like \"{target_name}\" is already organized!")
-    else:
-        print(f"(i) Oops! \n")
-        print(f"(i) Looks like the folder you chose \"{target_name}\" is empty!")
+def suggest_tasks():
+    new_task = pyip.inputMenu([
+                            "help",
+                            "History",
+                            "Undo an action",
+                            "Organize a folder",
+                            "Quick Backup",
+                            "Quit"
+                        ], lettered=False, numbered=True)
+    
+    #I need to confirm for sensitive options
+    if new_task == "help":
+        pass
+    elif new_task == "Organize a folder":
+        task = Organize()
+        task.start()
+    elif new_task == "Remove all empty folders in computer":
+        pass
+    elif new_task == "Empty Trash":
+        pass
+    elif new_task == "Quick Backup":
+        pass
+    elif new_task == "Fresh start":
+        pass
+    elif new_task == "Quit":
+        pass
