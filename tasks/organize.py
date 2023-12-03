@@ -9,20 +9,28 @@ class Organize:
 
     #ENTRY POINT FOR ALL ORGANIZING TASKS!
     #SHOULD I WORK WITH CLASS ATTRIBUTES?
-    def __init__(self, cwd):
-        self.cwd = cwd #might not need this one
-        self.targets = list()
-        self.organised_entries = dict()
+    def __init__(self, cwd = None):
+        self.organised_entries = {
+            "By tag" : {
+                "source": None,
+                "destination": None,
+                "entries": list()
+            },
+            "By type":{
+                "source": None,
+                "destination": None,
+                "entries": list()
+            }
+        }
 
 
-    #TO DO: Must ask user about what type of organisation he wants
     def start(self):
         target_dir_name = pyip.inputStr("(i) Type in the name of the folder you want to organize: ")
         target_paths = get_target_dir_paths(target_dir_name)
 
         if len(target_paths) != 0:
             if len(target_paths) > 1:
-                print(f"(i) It seems like there are multiple entries in your computer that are named \"{target_dir_name}\".")
+                print(f"(i) It seems like there are multiple entries in your computer that are named \"{target_dir_name}\". Choose the one you're looking for:")
                 target_path = pyip.inputMenu(target_paths, lettered=False, numbered=True) #asks the user to choose one destination by number, and returns chosen path from list
                 self.check_if_empty(target_dir_name, target_path)
 
@@ -41,74 +49,86 @@ class Organize:
             self.reprompt()
 
 
-    def check_if_empty(self, target_dir_name, target_path, org_type):        
+    def check_if_empty(self, target_dir_name, target_path):        
         #organizing elements only if they exist
         if len(os.listdir(target_path)):
+            print("What type of organisation would you like to perform ?")
             org_type = pyip.inputMenu(["By file type", "By tag"], lettered=False, numbered=True) #asks the user to choose one destination by number, and returns chosen path from list
+            self.execute(org_type, target_dir_name, target_path)
 
-            for entry in os.listdir():
-                organized_entry = self.execute(entry, org_type)
-
-                if organized_entry is not None:
-                    self.organised_entries.append(organized_entry)
-
-            #only display this message if there was something to be organized to begin with
-            if len(self.organised_entries):
-                print(f"(i) The following entries have been organized successfully!")
-                for entry in self.organised_entries:
-                    print(f"{entry}")
-            else:
-                print(f"(i) It Looks like \"{target_dir_name}\" is already organized!")
         else:
             print(f"(i) Oops! \n")
             time.sleep(1)
             print(f"(i) Looks like the folder (\"{target_dir_name}\") you chose to organize is empty!")
 
 
-    def execute(self, entry, org_type):
-        source = os.path.join(os.getcwd(), entry)
-        destination = self.get_destination(self, entry, org_type)
-        
-        os.rename(source, destination)
-        return entry
-    
-
-    def get_destination(self, entry, org_type):
-        if org_type == "By file type":
-            destination = self.get_destination_by_type(entry)
-        elif org_type == "By tag":
-            destination = self.get_destination_by_tag(entry)
-        
-        return destination
-        
-
-    def get_destination_by_type(self, entry):
-        destination = None
-
-        if os.path.isfile(entry):
-            type = get_entry_type(entry)
-            if type is not None:
-                type_dir = make_dir(type)
-                destination = os.path.join(type_dir, entry)
-
-        elif os.path.isdir(entry):
-            folders_dir = make_dir('folders')
-
-            #TO DO: must also check if the folder I am about to organize is not among the default user dirs
-            if not any(name in entry for name in DESTINATIONS): 
-                destination = os.path.join(folders_dir, entry)
-
+    def execute(self, org_type, target_dir_name, target_path):
+        if org_type == "By tag":
+            tag = pyip.inputStr("(i) Type in the name of the tag: ")
+            self.organise_by_tag(tag, target_path)
         else:
-            other_dir = make_dir('other')
-            destination = os.path.join(other_dir, entry)
+            self.organise_by_type(target_path)
         
-        return destination
+        #only display this message if there was something to be organized to begin with
+        if len(self.organised_entries):
+            print(f"(i) The following entries have been organized successfully!")
+            for entry in self.organised_entries:
+                print(f"{entry}")
+        else:
+            print(f"(i) It Looks like \"{target_dir_name}\" is already organized!")
+        
+
+    def organise_by_type(self, target_path):
+        os.chdir(target_path)
+
+        for entry in os.listdir():
+            source = os.path.join(os.getcwd(), entry)
+
+            if os.path.isfile(entry):
+                type = get_entry_type(entry)
+                if type is not None:
+                    type_dir = make_dir(type)
+                    destination = os.path.join(type_dir, entry)
+
+            elif os.path.isdir(entry):
+                folders_dir = make_dir('folders')
+
+                #TO DO: must also check if the folder I am about to organize is not among the default user dirs
+                if not any(name in entry for name in DESTINATIONS): 
+                    destination = os.path.join(folders_dir, entry)
+
+            else:
+                other_dir = make_dir('other')
+                destination = os.path.join(other_dir, entry)
+            
+            os.rename(source, destination)
+            self.update_state("By type", source, destination, entry)
 
     
-    def get_destination_by_tag(self):
-        pass
+    def organise_by_tag(self, tag, target_path):
+        os.chdir(target_path)
 
-    
+        for entry in os.listdir():
+            if tag in entry:
+                tag_dir = make_dir(tag)
+
+                source = os.path.join(os.getcwd(), entry)
+                destination = os.path.join(tag_dir, entry)
+
+                os.rename(source, destination)
+                self.update_state("By tag", source, destination, entry)
+            
+
+    def update_state(self, org_type, source, destination, entry):
+        if self.organised_entries[org_type]["source"] == None:
+            self.organised_entries[org_type]["source"] = source
+        
+        if self.organised_entries[org_type]["destination"] == destination:
+            self.organised_entries[org_type]["destination"] = destination
+        
+        self.organised_entries[org_type]["entries"].append(entry)
+
+
     def reprompt(self):
         reprompt = pyip.inputYesNo(f"Would you like organize a folder with another name ?")
         if reprompt == "yes":
