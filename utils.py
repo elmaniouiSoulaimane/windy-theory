@@ -4,6 +4,7 @@ import pyinputplus as pyip
 
 #LOCAL IMPORTS
 from tasks.organize import Organize
+from tasks.cleanup import Cleanup
 
 def make_dir(name):
     new_dir_path = os.path.join(os.getcwd(), name)
@@ -44,6 +45,7 @@ def suggest_tasks():
     new_task = pyip.inputMenu([
                             "help",
                             "History",
+                            "Cleanup",
                             "Undo an action",
                             "Organize a folder",
                             "Quick Backup",
@@ -53,16 +55,17 @@ def suggest_tasks():
     #I need to confirm for sensitive options
     if new_task == "help":
         pass
+
     elif new_task == "Organize a folder":
         task = Organize()
         task.start()
-    elif new_task == "Remove all empty folders in computer":
-        pass
-    elif new_task == "Empty Trash":
-        pass
+
+    elif new_task == "Cleanup":
+        task = Cleanup
+        task.start()
+
     elif new_task == "Quick Backup":
         pass
-    elif new_task == "Fresh start":
-        pass
+    
     elif new_task == "Quit":
         pass
