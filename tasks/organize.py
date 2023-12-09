@@ -72,8 +72,9 @@ class Organize:
         #only display this message if there was something to be organized to begin with
         if len(self.organised_entries):
             print(f"(i) The following entries have been organized successfully!")
-            for entry in self.organised_entries:
-                print(f"{entry}")
+            for type in self.organised_entries:
+                for entry in type["entries"]:
+                    print(f"{entry}")
         else:
             print(f"(i) It Looks like \"{target_dir_name}\" is already organized!")
         
