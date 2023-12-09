@@ -2,10 +2,6 @@ import os
 from constants import *
 import pyinputplus as pyip
 
-#LOCAL IMPORTS
-from tasks.organize import Organize
-from tasks.cleanup import Cleanup
-
 def make_dir(name):
     new_dir_path = os.path.join(os.getcwd(), name)
 
@@ -42,6 +38,10 @@ def get_entry_type(entry):
 
 
 def suggest_tasks():
+    #LOCAL IMPORTS
+    from tasks.organize import Organize
+    from tasks.cleanup import Cleanup
+
     new_task = pyip.inputMenu([
                             "help",
                             "History",
@@ -61,7 +61,7 @@ def suggest_tasks():
         task.start()
 
     elif new_task == "Cleanup":
-        task = Cleanup
+        task = Cleanup()
         task.start()
 
     elif new_task == "Quick Backup":
