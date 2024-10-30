@@ -3,7 +3,7 @@ SOURCES = [
     'Documents',
     'Downloads'
 ]
-DESTINATIONS = [
+DEFAULT_DIRS = [
     'videos',
     'audios',
     'archives',
