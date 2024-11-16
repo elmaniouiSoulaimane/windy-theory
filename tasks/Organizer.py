@@ -1,36 +1,44 @@
+# STANDARD LIBRARY IMPORTS
+from asyncio import Task
+from genericpath import isdir
 import os
 import time
-import pyinputplus as pyip
-from gi.overrides.keysyms import target
+import logging
+from venv import create
 
-from constants import *
+# THIRD PARTY IMPORTS
+import pyinputplus as pyip
+from typing import Optional
+
+# LOCAL IMPORTS
+from constants import DEFAULT_DIRS
 from managers.file import FileManager
 from Router import Router
+from managers.database import DatabaseManager
+from models import operations
+from models.entries import Entry
+from models.operations import Operation
+from models.users import User
+from models.tasks import Task
+
 
 class Organizer:
 
-    target_dir_name: [str, None] = None
-    target_path: [str, None] = None
-    org_type: [int, None] = None
+    target_dir_name: Optional[str] = None
+    target_path: Optional[str] = None
+    org_type: Optional[int] = None
 
-    #ENTRY POINT FOR ALL ORGANIZING TASKS!
-    #SHOULD I WORK WITH CLASS ATTRIBUTES?
-    def __init__(self, cwd = None):
-        self.organised_entries = { #FOR HISTORY PURPOSES
-            "By tag" : {
-                # "source": None,
-                # "destination": None,
-                # "entries": list()
-            },
-            "By type":{
-                # "source": None,
-                # "destination": None,
-                # "entries": list()
-            }
-        }
-
+    def __init__(self):
+        pass
 
     def start(self):
+        """
+        Starts the organization process.
+
+        Asks the user to select the target directory to organize,
+        checks if the directory is empty,
+        and executes the organization process based on the type of organization selected by the user.
+        """
         self.ask_for_target()
         self.check_if_empty()
         self.execute()
@@ -54,22 +62,39 @@ class Organizer:
         
         self.target_path : str = found_paths[0]
 
-
     def check_if_empty(self):
-        #organizing elements only if they exist
+        """
+        Checks if the target directory is empty, and if so, prompts the user to choose another directory.
+        """
         if not os.listdir(self.target_path): # lists all files and directories in a specified directory path
-            print(f"(i) Oops! \n")
+            print("(i) Oops! \n")
             time.sleep(1)
             print(f"(i) Looks like the folder (\"{self.target_dir_name}\") you chose to organize is empty!")
             self.reprompt()
 
-
     def ask_for_organization_type(self):
+        """
+        Prompts the user to select the type of organization to perform on the target directory.
+
+        Sets:
+            self.org_type (int): The organization type selected by the user. 
+                                1 for organizing by file type/extension, 
+                                2 for organizing by a tag/name.
+        """
         print("What type of organisation would you like to perform ?")
-        self.org_type = pyip.inputMenu(["By file type/extension", "By a tag/name"], lettered=False, numbered=True)
-        
+        self.org_type = pyip.inputMenu(["By file type/extension", "By a tag/name"], lettered=False, numbered=True)    
 
     def execute(self):
+        """
+        Executes the organization process on the target directory based on the selected organization type.
+
+        Changes the current working directory to the target path and performs the organization by tag or by type
+        depending on the value of `self.org_type`. After organizing, it displays a message with the organized entries
+        if there were any changes made, otherwise it indicates that the directory was already organized.
+
+        Raises:
+            Exception: If an error occurs during the organization process.
+        """
         os.chdir(self.target_path)
 
         if self.org_type == 2:
@@ -80,15 +105,25 @@ class Organizer:
         #only display this message if there was something to be organized to begin with
         #TO DO: Must verify the values if full, because the variable already contains objects
         if len(self.organised_entries):
-            print(f"(i) The following entries have been organized successfully!")
+            print("(i) The following entries have been organized successfully!")
             for type in self.organised_entries:
                 for entry in type['entries']:
                     print(f"{entry}")
         else:
             print(f"(i) It Looks like \"{self.target_dir_name}\" is already organized!")
 
-
     def organise_by_tag(self):
+        """
+        Organises the entries in the target directory by a tag/name.
+
+        Prompts the user for a tag name and moves all the entries containing that tag to a new directory with the same name.
+
+        Args:
+            None
+
+        Raises:
+            Exception: If an error occurs during the organization process.
+        """
         # input must not be complex chars
         tag = pyip.inputStr("(i) Type in the name of the tag: ")
 
@@ -102,13 +137,24 @@ class Organizer:
                     destination = os.path.join(tag_dir, entry)
 
                     os.rename(source, destination)
-                    self.update_state("By tag", source, destination, entry)
 
-                except Exception as e:
-                    raise e
-
+                except OSError as e:
+                    logging.error(f"Error occurred while organizing {entry} by {tag} tag: {e}")
+                    raise OSError(f"Error occurred while organizing {entry} by {tag} tag: {e}")
 
     def organise_by_type(self):
+        """
+        Organises the entries in the target directory by type.
+
+        Organises files by type into folders such as documents, videos, images, archives, programs, and folders.
+        Also organises other entries that are not files or folders into an "other" folder.
+
+        Args:
+            None
+
+        Raises:
+            Exception: If an error occurs during the organization process.
+        """
         for entry in os.listdir():
             source = os.path.join(os.getcwd(), entry)
             destination = None
@@ -123,7 +169,6 @@ class Organizer:
             elif os.path.isdir(entry):
                 folders_dir = FileManager.make_dir('folders')
 
-                #TO DO: must also check if the folder I am about to organize is not among the default user dirs
                 if not any(name in entry for name in DEFAULT_DIRS):
                     destination = os.path.join(folders_dir, entry)
 
@@ -131,12 +176,20 @@ class Organizer:
                 other_dir = FileManager.make_dir('other')
                 destination = os.path.join(other_dir, entry)
             
-            os.rename(source, destination)
-            self.update_state("By type", source, destination, entry)
-
+            try:
+                os.rename(source, destination)
+            except OSError as e:
+                logging.error(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
+                raise OSError(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
 
     def reprompt(self):
-        answer = pyip.inputYesNo(f"Would you like to organize a folder with another name ?")
+        """
+        Asks the user if they want to organize a folder with another name.
+
+        Prompts the user with a yes/no question. If the user answers "no", it prints a message and suggests tasks again.
+        If the user answers "yes", it starts the organization process again.
+        """
+        answer = pyip.inputYesNo("Would you like to organize a folder with another name ?")
 
         if answer == "no":
             print("Okay, what would you like to do next ?")
@@ -146,15 +199,52 @@ class Organizer:
             self.start()
 
 
-    def update_state(self, type, source, destination, entry):
+    @staticmethod
+    def get_entry_type(entry)-> str:
+        if os.path.isfile(entry):
+            return "file"
+        elif os.path.isdir(entry):
+            return "dir"
 
-        if self.organised_entries[self.org_type]["source"] == None: #TO DO: This is likely wrong, what if the key already has a value?
-            self.organised_entries[self.org_type]["source"] = source
+
+    def save_record_in_db(self, organization_type: str, entry, origin_path:str):
+        db_session = DatabaseManager.create_session()
+
+        try:
+            Organizer.create_entry_element(db_session, entry, origin_path)
+            Organizer.create_operation_element(db_session, entry=entry, organization_type=organization_type)
+            db_session.commit()
+
+        except Exception as e:
+            db_session.rollback()
+            print(f"Error saving record: {e}")
+
+        finally:
+            db_session.close()
+
+    @staticmethod
+    def create_entry_element(session, entry, origin_path:str)-> None:
+        entry_type = Organizer.get_entry_type(entry)
+
+        entry_elm = Entry(name=entry, type=entry_type, path=origin_path)
+
+        session.add(entry_elm)
+
+
+    @staticmethod
+    def create_operation_element(session, entry, organization_type)-> None:
+        user_name = os.environ.get('USER')
+
+        entry_elm = session.query(Entry).filter_by(name=entry).first()
+        user = session.query(User).filter_by(name=user_name).first()
+        task = session.query(Task).filter_by(name=organization_type).first()
+
+        if not entry_elm or not user or not task:
+            print(f"Missing required data: entry={entry_elm}, user={user}, task={task}")
+            return
+
+        operation = Operation(task=task, entry=entry_elm, user=user)
         
-        if self.organised_entries[self.org_type]["destination"] == destination: #TO DO: Same here
-            self.organised_entries[self.org_type]["destination"] = destination
+        session.add(operation)
+
         
-        self.organised_entries[self.org_type]["entries"].append(entry)
-
-
-
