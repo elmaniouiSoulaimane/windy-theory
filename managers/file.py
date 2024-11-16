@@ -22,6 +22,9 @@ class FileManager:
 
         for root, dirs, files in os.walk(f'/home/{user}/', topdown=True, onerror=None, followlinks=False):
 
+            # Filter out hidden directories
+            dirs[:] = [d for d in dirs if not d.startswith('.')]
+            
             # TO DO: This should also check if the typed name string is found in the dir name, not just the exact name,
             # might also add the possibility to type both the name and the dir to look into
             if target_dir in dirs:
