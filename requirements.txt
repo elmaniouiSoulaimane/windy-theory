@@ -1,0 +1,6 @@
+greenlet==3.1.1
+PyInputPlus==0.2.12
+PySimpleValidate==0.2.12
+SQLAlchemy==2.0.36
+stdiomask==0.0.6
+typing_extensions==4.12.2
