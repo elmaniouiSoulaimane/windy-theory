@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
@@ -10,6 +10,7 @@ class Operation(Base):
 
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())  # Automatically set current timestamp
+    keyword = Column(String, nullable=False) # represents the tag or file type to be used for organization
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="operations")
