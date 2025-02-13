@@ -12,7 +12,7 @@ from typing import Optional
 from sqlalchemy.orm import sessionmaker
 
 # LOCAL IMPORTS
-from managers.file import FileManager
+from managers.entry import EntryManager
 from Router import Router
 from managers.database import DatabaseManager
 from models.entries import Entry
@@ -23,20 +23,28 @@ from models.tasks import Task
 
 class Organizer:
 
-    target_dir_name: Optional[str] = None
-    target_path: Optional[str] = None
-    org_type: Optional[int] = None
-    organised_entries: list = []
-
     def __init__(self):
-        pass
+        """
+        Initialises the Organizer object.
 
+        The following attributes are set to None during initialization:
+            - target_dir_name: The name of the target directory to organize.
+            - target_path: The path of the target directory to organize.
+            - org_type: The type of organization to perform (e.g. by extension, by size, etc.).
+            - organised_entries: A list of Entry objects that have been organized.
+        """
+        self.target_dir_name: Optional[str] = None
+        self.target_path: Optional[str] = None
+        self.org_type: Optional[int] = None
+        self.organised_entries: Optional[list] = None
+        
     def start(self):
         """
         Starts the organization process.
 
         Asks the user to select the target directory to organize,
         checks if the directory is empty,
+        asks the user to select the type of organization,
         and executes the organization process based on the type of organization selected by the user.
         """
         self.ask_for_target()
@@ -51,7 +59,7 @@ class Organizer:
             tuple: A tuple containing the target directory name (str) and path (str).
         """
         self.target_dir_name = pyip.inputStr("(i) Type in the name of the folder you want to organize: ")
-        found_paths: list = FileManager.get_target_dir_paths(self.target_dir_name)
+        found_paths: list = EntryManager.get_target_dir_paths(self.target_dir_name)
 
         if not found_paths:
             print(f"Unfortunately I did not find any file or folder with the name \"{self.target_dir_name}\"")
@@ -136,7 +144,7 @@ class Organizer:
             if tag in entry:
                 try: # moving the found entries to the tag directory
                     # creating a directory for the tag
-                    tag_dir = FileManager.make_dir(tag)
+                    tag_dir = EntryManager.make_dir(tag)
 
                     source = os.path.join(os.getcwd(), entry)
                     destination = os.path.join(tag_dir, entry)
@@ -151,11 +159,11 @@ class Organizer:
                         'destination': destination
                     })
 
-                    self.save_record_in_db(organization_type='Organize by a tag/name', entry=entry, origin_path=source, destination=destination)
+                    DatabaseManager.save(organization_type='Organize by a tag/name', entry=entry, origin=source, destination=destination)
 
                 except OSError as e:
-                    logging.error(f"Error occurred while organizing {entry} by {tag} tag: {e}")
-                    raise OSError(f"Error occurred while organizing {entry} by {tag} tag: {e}")
+                    logging.error(f"Error occurred while organizing {entry}, by {tag} tag, details: {str(e)}")
+                    raise OSError(f"Error occurred while organizing {entry}, by {tag} tag, details: {str(e)}")
 
     def organise_by_type(self):
         """
@@ -175,25 +183,25 @@ class Organizer:
             destination = None
 
             if os.path.isfile(entry):
-                entry_type = FileManager.get_entry_type(entry)
+                entry_type = EntryManager.get_entry_type(entry)
 
                 if entry_type:
-                    type_dir = FileManager.make_dir(entry_type)
+                    type_dir = EntryManager.make_dir(entry_type)
                     destination = os.path.join(type_dir, entry)
                 else:
                     continue
 
             elif os.path.isdir(entry):
-                """ folders_dir = FileManager.make_dir('folders')
+                """ folders_dir = EntryManager.make_dir('folders')
 
-                if not any(name in entry for name in FileManager.DEFAULT_DIRS):
+                if not any(name in entry for name in EntryManager.DEFAULT_DIRS):
                     destination = os.path.join(folders_dir, entry)
                 else:
                     continue """
                 continue
 
             else:
-                other_dir = FileManager.make_dir('other')
+                other_dir = EntryManager.make_dir('other')
                 destination = os.path.join(other_dir, entry)
 
             try:
@@ -228,50 +236,3 @@ class Organizer:
 
         else:
             self.start()
-
-    @staticmethod
-    def get_entry_type(entry)-> str:
-        if os.path.isfile(entry):
-            return "file"
-        elif os.path.isdir(entry):
-            return "dir"
-
-    def save_record_in_db(self, organization_type: str, entry, origin_path:str, destination: str):
-        db_session = DatabaseManager.create_session()
-
-        try:
-            Organizer.create_entry_element(db_session, entry, origin_path, destination)
-            Organizer.create_operation_element(db_session, entry=entry, organization_type=organization_type)
-            db_session.commit()
-
-        except Exception as e:
-            db_session.rollback()
-            print(f"Error saving record: {e}")
-
-        finally:
-            db_session.close()
-
-    @staticmethod
-    def create_entry_element(session: sessionmaker, entry: str, origin_path: str, destination: str)-> None:
-        entry_type = Organizer.get_entry_type(entry)
-
-        session.add(Entry(name=entry, type=entry_type, origin_path=origin_path, new_location=destination))
-
-    @staticmethod
-    def create_operation_element(session: sessionmaker, entry: str, organization_type: str)-> None:
-        user_name = os.environ.get('USER')
-
-        # TODO: what if the database has an entry with the same name?
-        entry_elm = session.query(Entry).filter_by(name=entry).first()
-        user = session.query(User).filter_by(name=user_name).first()
-        task = session.query(Task).filter_by(name=organization_type).first()
-
-        if not entry_elm or not user or not task:
-            print(f"Missing required data: entry={entry_elm}, user={user}, task={task}")
-            return
-
-        operation = Operation(task=task, entry=entry_elm, user=user)
-        
-        session.add(operation)
-
-        

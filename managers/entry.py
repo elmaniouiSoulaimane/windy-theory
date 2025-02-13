@@ -1,6 +1,6 @@
 import os
 
-class FileManager:
+class EntryManager:
     DEFAULT_DIRS = [
         'videos',
         'audios',
@@ -186,12 +186,18 @@ class FileManager:
                 print(error)
                 return None
 
-    # DON'T REMEMBER HOW THIS WORKS, MUST ASK GPT
     @staticmethod
-    def get_entry_type(entry):
-        for dict in FileManager.FILE_TYPES_AND_EXTENSIONS:
+    def get_exact_type(entry):
+        for dict in EntryManager.FILE_TYPES_AND_EXTENSIONS:
             if any(
                     ((extension[0] in entry) or (extension[0].upper() in entry))
                     for extension in dict.get("extensions", [])):
                 return dict.get("type")
         return None
+    
+    @staticmethod
+    def get_general_type(entry)-> str:
+        if os.path.isfile(entry):
+            return "file"
+        elif os.path.isdir(entry):
+            return "dir"

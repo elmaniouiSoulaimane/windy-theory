@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
 from .base import Base
+from managers.entry import EntryManager
 
 class Entry(Base):
     __tablename__ = "entries"
@@ -9,8 +10,8 @@ class Entry(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     type = Column(String)
-    origin_path = Column(String)
-    new_location = Column(String)
+    origin = Column(String)
+    destination = Column(String)
 
     operations = relationship("Operation", back_populates="entry")
 
@@ -22,3 +23,10 @@ class Entry(Base):
 
     def __repr__(self):
         return f"Entry(id={self.id}, name={self.name}, type={self.type}, origin_path={self.origin_path}, new_location={self.new_location})"
+
+    @staticmethod
+    def create(name: str, origin: str, destination: str) -> Entry:
+        type_ = EntryManager.get_general_type(name)
+
+        # TODO: what if the database has an entry with the same name?
+        return Entry(name=name, type=type_, origin=origin, destination=destination)

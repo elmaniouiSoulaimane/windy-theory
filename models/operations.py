@@ -1,9 +1,14 @@
+import os
+
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 
 from .base import Base
+from .entries import Entry
+from .users import User
+from .tasks import Task
 
 class Operation(Base):
     __tablename__ = "operations"
@@ -29,3 +34,14 @@ class Operation(Base):
 
     def __repr__(self):
         return f"Operation(id={self.id}, created_at={self.created_at}, destination_dir={self.destination_dir}, task_id={self.task_id}, entry_id={self.entry_id}, user_id={self.user_id})"
+    
+    @staticmethod
+    def _create(task: Task, entry: Entry, user: User)-> Operation:
+        return Operation(task=task, entry=entry, user=user)
+    
+    @staticmethod
+    def save(entry_name: str, origin: str, destination: str, task: Task, user: User) -> tuple(Entry, Operation):
+        entry: Entry = Entry.create(entry_name, origin, destination)
+        operation: Operation = Operation._create(task=task, entry=entry, user=user)
+
+        return entry, operation
