@@ -18,7 +18,6 @@ class EntryManager:
         'Downloads'
     ]
 
-
     FILE_TYPES_AND_EXTENSIONS = [
         {
             "type": "videos",

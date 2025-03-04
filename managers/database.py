@@ -1,37 +1,27 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from models import Base, TaskGroup, Task, Operation, Entry, User
+from models import Base, TaskGroup, Task, Operation
+
 
 class DatabaseManager:
-    uri: str = "sqlite:///history.db"
-    #engine: create_engine
-    #session_factory: sessionmaker
-
-    def __init__(self):
+    def __init__(self, db_url: str = "sqlite:///history.db"):
+        """Initialize the database connection."""
+        self.engine = create_engine(db_url, echo=False) # Creates a connection to SQLite database
+        self.SessionLocal = sessionmaker(bind=self.engine, autoflush=False, autocommit=False)
         self.create_tables()
         self.seed_data()
     
-    @property
-    def con(self) -> create_engine:
-        """
-        Property to create a database engine using the uri string.
-        If the engine does not exist, it is created and stored in the _engine attribute.
-        Otherwise, the stored engine is returned.
-        """
-        if not hasattr(self, "_con"):
-            # Creates a connection to SQLite database
-            self._con = create_engine(self.uri)
-        return self._con
-
-    @property
-    def session_maker(self) -> sessionmaker:
-        if not hasattr(self, "_session_maker"):
-            self._session_maker = sessionmaker(bind=self.con) # Factory for creating sessions
-        return self._session_maker
-    
     def create_tables(self):
-        Base.metadata.create_all(self.con)
+        Base.metadata.create_all(self.engine)
+
+    def get_session(self) -> Session:
+        """Get a new database session."""
+        return self.SessionLocal()
+
+    def close_session(self, session: Session):
+        """Close the given session."""
+        session.close()
     
     def seed_data(self):
         session = self.session_maker()
@@ -74,3 +64,29 @@ class DatabaseManager:
         session: sessionmaker = sessionmaker(bind=engine)
 
         return session()
+
+    @staticmethod
+    def save(org_type: str, entry_name: str, origin:str, destination: str):
+        db_session = DatabaseManager.create_session()
+
+        try:
+            # user_name = os.environ.get('USER')
+            # user: User = db_session.query(User).filter_by(name=user_name).first()
+            # task: Task = db_session.query(Task).filter_by(name=org_type).first()
+
+            # if not entry or not user or not task:
+            #     print(f"Missing required data: entry={entry}, user={user}, task={task}")
+            #     return
+            
+            Operation.create()
+            db_session.add_all([entry, operation])
+            db_session.commit()
+
+        except Exception as e:
+            db_session.rollback()
+            print(f"Error saving record: {e}")
+
+        finally:
+            db_session.close()
+
+        

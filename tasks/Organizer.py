@@ -1,24 +1,22 @@
-# STANDARD LIBRARY IMPORTS
+import enum
+import logging
 import os
 import time
-import logging
-from venv import create
-from asyncio import Task
-from genericpath import isdir
-
-# THIRD PARTY IMPORTS
-import pyinputplus as pyip
 from typing import Optional
-from sqlalchemy.orm import sessionmaker
 
-# LOCAL IMPORTS
-from managers.entry import EntryManager
+import pyinputplus as pyip
+
 from Router import Router
 from managers.database import DatabaseManager
-from models.entries import Entry
-from models.operations import Operation
-from models.users import User
-from models.tasks import Task
+from managers.entry import EntryManager
+
+
+class OrganizationType(enum.Enum):
+    BY_KEYWORD = "keyword"
+    BY_EXTENSION = "extension"
+
+    def __str__(self):
+        return self.value
 
 
 class Organizer:
@@ -31,12 +29,10 @@ class Organizer:
             - target_dir_name: The name of the target directory to organize.
             - target_path: The path of the target directory to organize.
             - org_type: The type of organization to perform (e.g. by extension, by size, etc.).
-            - organised_entries: A list of Entry objects that have been organized.
         """
         self.target_dir_name: Optional[str] = None
         self.target_path: Optional[str] = None
         self.org_type: Optional[int] = None
-        self.organised_entries: Optional[list] = None
         
     def start(self):
         """
@@ -90,11 +86,11 @@ class Organizer:
 
         Sets:
             self.org_type (int): The organization type selected by the user. 
-                                1 for organizing by file type/extension, 
-                                2 for organizing by a tag/name.
+                                1 for organizing by a keyword, 
+                                2 for organizing by file extension.
         """
         print("What type of organisation would you like to perform ?")
-        self.org_type = pyip.inputMenu(["Organize by file type/extension", "Organize by a tag/name"], lettered=False, numbered=True)    
+        self.org_type = pyip.inputMenu(choices=[str(OrganizationType.BY_KEYWORD), str(OrganizationType.BY_EXTENSION)], lettered=False, numbered=True)
 
     def execute(self):
         """
@@ -109,23 +105,13 @@ class Organizer:
         """
         os.chdir(self.target_path)
 
-        if self.org_type == 2:
-            self.organise_by_tag()
+        if self.org_type == 1:
+            self.organise_by_keyword()
         else:
-            self.organise_by_type()
-        
-        #only display this message if there was something to be organized to begin with
-        #TO DO: Must verify the values if full, because the variable already contains objects
-        if len(self.organised_entries):
-            print("(i) The following entries have been organized successfully!")
-            for entry in self.organised_entries:
-                print(f"{entry['entry']} has been moved to {entry['destination']}")
+            self.organise_by_extension()
 
-            self.organised_entries = []
-        else:
-            print(f"(i) It Looks like \"{self.target_dir_name}\" is already organized!")
-
-    def organise_by_tag(self):
+    @staticmethod
+    def organise_by_keyword():
         """
         Organises the entries in the target directory by a tag/name.
 
@@ -138,34 +124,27 @@ class Organizer:
             Exception: If an error occurs during the organization process.
         """
         # input must not be complex chars
-        tag = pyip.inputStr("(i) Type in the name of the tag: ")
+        keyword = pyip.inputStr("(i) Type-in the keyword: ")
 
         for entry in os.listdir():
-            if tag in entry:
+            if keyword in entry:
                 try: # moving the found entries to the tag directory
                     # creating a directory for the tag
-                    tag_dir = EntryManager.make_dir(tag)
+                    keyword_dir = EntryManager.make_dir(keyword)
 
                     source = os.path.join(os.getcwd(), entry)
-                    destination = os.path.join(tag_dir, entry)
+                    destination = os.path.join(keyword_dir, entry)
 
                     os.rename(source, destination)
 
-                    self.organised_entries.append({
-                        'organization_type': 'tag',
-                        'tag': tag,
-                        'entry': entry,
-                        'origin path': source,
-                        'destination': destination
-                    })
-
-                    DatabaseManager.save(organization_type='Organize by a tag/name', entry=entry, origin=source, destination=destination)
+                    DatabaseManager.save(org_type=str(OrganizationType.BY_KEYWORD), entry_name=entry, origin=source, destination=destination)
 
                 except OSError as e:
-                    logging.error(f"Error occurred while organizing {entry}, by {tag} tag, details: {str(e)}")
-                    raise OSError(f"Error occurred while organizing {entry}, by {tag} tag, details: {str(e)}")
+                    logging.error(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")
+                    raise OSError(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")
 
-    def organise_by_type(self):
+    @staticmethod
+    def organise_by_extension():
         """
         Organises the entries in the target directory by type.
 
@@ -180,46 +159,25 @@ class Organizer:
         """
         for entry in os.listdir():
             source = os.path.join(os.getcwd(), entry)
-            destination = None
 
             if os.path.isfile(entry):
-                entry_type = EntryManager.get_entry_type(entry)
+                entry_type = EntryManager.get_exact_type(entry)
 
                 if entry_type:
                     type_dir = EntryManager.make_dir(entry_type)
                     destination = os.path.join(type_dir, entry)
                 else:
-                    continue
+                    other_dir = EntryManager.make_dir('other')
+                    destination = os.path.join(other_dir, entry)
 
-            elif os.path.isdir(entry):
-                """ folders_dir = EntryManager.make_dir('folders')
+                try:
+                    os.rename(source, destination)
 
-                if not any(name in entry for name in EntryManager.DEFAULT_DIRS):
-                    destination = os.path.join(folders_dir, entry)
-                else:
-                    continue """
-                continue
-
-            else:
-                other_dir = EntryManager.make_dir('other')
-                destination = os.path.join(other_dir, entry)
-
-            try:
-                os.rename(source, destination)
-
-                self.organised_entries.append({
-                    'organization_type': 'type',
-                    'type': entry_type,
-                    'entry': entry,
-                    'origin path': source,
-                    'destination': destination
-                })
-
-                self.save_record_in_db(organization_type='Organize by file type/extension', entry=entry, origin_path=source, destination=destination)
-
-            except OSError as e:
-                logging.error(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
-                raise OSError(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
+                    DatabaseManager.save(org_type=str(OrganizationType.BY_EXTENSION), entry_name=entry, origin=source,
+                                         destination=destination)
+                except OSError as e:
+                    logging.error(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
+                    raise OSError(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
 
     def reprompt(self):
         """
