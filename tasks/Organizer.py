@@ -9,6 +9,7 @@ import pyinputplus as pyip
 from Router import Router
 from managers.database import DatabaseManager
 from managers.entry import EntryManager
+from models.entries import Entry
 
 
 class OrganizationType(enum.Enum):
@@ -137,7 +138,7 @@ class Organizer:
 
                     os.rename(source, destination)
 
-                    DatabaseManager.save(org_type=str(OrganizationType.BY_KEYWORD), entry_name=entry, origin=source, destination=destination)
+                    Entry.create(org_type=str(OrganizationType.BY_KEYWORD), entry_name=entry, origin=source, destination=destination)
 
                 except OSError as e:
                     logging.error(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")

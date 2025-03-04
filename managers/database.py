@@ -6,13 +6,23 @@ from models import TaskGroup, Task, Operation
 Base = declarative_base()
 
 class DatabaseManager:
-    def __init__(self, db_url: str = "sqlite:///history.db"):
+    _instance = None  # Singleton instance
+
+    def __new__(cls, db_url: str = "sqlite:///history.db"):
         """Initialize the database."""
-        self.engine = create_engine(db_url, echo=False) # Creates a connection to SQLite database
-        self.session = sessionmaker(bind=self.engine, autoflush=False, autocommit=False)
+        if cls._instance is None:
+            cls._instance = super(DatabaseManager, cls).__new__(cls)
+            cls._instance.init_db(db_url)
+        return cls._instance
+
+    def init_db(self, db_url: str):
+        self.engine = create_engine(db_url, echo=False)  # Creates a connection to SQLite database
+        self.session_maker = sessionmaker(bind=self.engine, autoflush=False, autocommit=False)
+        self.session = self.session_maker()
+
         self.create_tables()
         self.seed_data()
-    
+
     def create_tables(self):
         """Create all tables if they don't exist."""
         Base.metadata.create_all(self.engine)
