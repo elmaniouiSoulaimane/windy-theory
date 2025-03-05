@@ -30,7 +30,7 @@ class Entry(Base):
 
         # TODO: what if the database has an entry with the same name?
         new_entry = Entry(name=name, type=type_, origin=origin, destination=destination)
-        session = DatabaseManager.create_session()
-        session.add(new_entry)
-        session.commit()
-        session.close()
+        db_manager = DatabaseManager()
+
+        with db_manager.session_scope() as session:
+            session.add(new_entry)
