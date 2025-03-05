@@ -1,41 +1,61 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+import logging
+from contextlib import contextmanager
+from threading import Lock
 
-from models import TaskGroup, Task, Operation
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+from models import TaskGroup, Task
 
 Base = declarative_base()
+logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    _instance = None  # Singleton instance
+    _instance = None
+    _lock = Lock()
 
     def __new__(cls, db_url: str = "sqlite:///history.db"):
-        """Initialize the database."""
-        if cls._instance is None:
-            cls._instance = super(DatabaseManager, cls).__new__(cls)
-            cls._instance.init_db(db_url)
+        if not cls._instance:
+            with cls._lock:
+                # Double-checked locking
+                if not cls._instance:
+                    cls._instance = super().__new__(cls)
+                    cls._instance.init_db(db_url)
+
         return cls._instance
 
     def init_db(self, db_url: str):
-        self.engine = create_engine(db_url, echo=False)  # Creates a connection to SQLite database
-        self.session_maker = sessionmaker(bind=self.engine, autoflush=False, autocommit=False)
-        self.session = self.session_maker()
+        """Initialize database connection and create tables."""
+        try:
+            self.engine = create_engine(db_url, echo=False)  # Creates a connection to SQLite database
+            self.session_maker = sessionmaker(bind=self.engine, autoflush=False, autocommit=False)
 
-        self.create_tables()
-        self.seed_data()
+            self.create_tables()
+            self.seed_data()
+        except Exception as e:
+            logger.error(f"Database initialization failed: {e}")
+            raise
+
+    @contextmanager
+    def session_scope(self):
+        """Provide a transactional scope around a series of operations."""
+        session = self.session_maker()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
 
     def create_tables(self):
         """Create all tables if they don't exist."""
         Base.metadata.create_all(self.engine)
-
-    def create_session(self) -> Session:
-        """Create a new database session."""
-        return self.session()
     
     def seed_data(self):
-        session = self.create_session()
-
-        try:
-            if session.query(TaskGroup).count() == 0:                
+        with self.session_scope() as session:
+            if session.query(TaskGroup).count() == 0:
                 session.add_all(
                     [
                         TaskGroup(name="Organize"), 
@@ -57,12 +77,5 @@ class DatabaseManager:
                 session.add_all([task1, task2, task3, task4])
 
             session.commit()
-
-        except Exception as e:
-            session.rollback()
-            print(f"Error seeding data: {e}")
-
-        finally:
-            session.close()
 
         
