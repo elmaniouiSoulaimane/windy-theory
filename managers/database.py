@@ -20,18 +20,18 @@ class DatabaseManager:
                 # Double-checked locking
                 if not cls._instance:
                     cls._instance = super().__new__(cls)
-                    cls._instance.init_db(db_url)
+                    cls._instance._init_db(db_url)
 
         return cls._instance
 
-    def init_db(self, db_url: str):
+    def _init_db(self, db_url: str):
         """Initialize database connection and create tables."""
         try:
-            self.engine = create_engine(db_url, echo=False)  # Creates a connection to SQLite database
-            self.session_maker = sessionmaker(bind=self.engine, autoflush=False, autocommit=False)
+            self._engine = create_engine(db_url, echo=False)  # Creates a connection to SQLite database
+            self._session_maker = sessionmaker(bind=self._engine, autoflush=False, autocommit=False)
 
-            self.create_tables()
-            self.seed_data()
+            self._create_tables()
+            self._seed_data()
         except Exception as e:
             logger.error(f"Database initialization failed: {e}")
             raise
@@ -39,7 +39,7 @@ class DatabaseManager:
     @contextmanager
     def session_scope(self):
         """Provide a transactional scope around a series of operations."""
-        session = self.session_maker()
+        session = self._session_maker()
         try:
             yield session
             session.commit()
@@ -49,11 +49,11 @@ class DatabaseManager:
         finally:
             session.close()
 
-    def create_tables(self):
+    def _create_tables(self):
         """Create all tables if they don't exist."""
-        Base.metadata.create_all(self.engine)
+        Base.metadata.create_all(self._engine)
     
-    def seed_data(self):
+    def _seed_data(self):
         with self.session_scope() as session:
             if session.query(TaskGroup).count() == 0:
                 session.add_all(
