@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 
-from .base import Base
+from managers.database import Base
 from .entries import Entry
 from .users import User
 from .tasks import Task

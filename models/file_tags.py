@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String
-from .base import Base
+from managers.database import Base
 
 
 class FileTags(Base):

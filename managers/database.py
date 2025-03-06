@@ -52,30 +52,37 @@ class DatabaseManager:
     def _create_tables(self):
         """Create all tables if they don't exist."""
         Base.metadata.create_all(self._engine)
+
+    @staticmethod
+    def _seed_task_groups(session) -> None:
+        if session.query(TaskGroup).count() == 0:
+            session.add_all([
+                TaskGroup(name="Organize"),
+                TaskGroup(name="Cleanup"),
+                TaskGroup(name="Backup"),
+                TaskGroup(name="Undo")
+            ])
+
+    @staticmethod
+    def _seed_tasks(session):
+        if session.query(Task).count() == 0:
+            org_task_group = session.query(TaskGroup).filter_by(name="Organize").first()
+            cln_task_group = session.query(TaskGroup).filter_by(name="Cleanup").first()
+
+            task1 = Task(name="Organize by keyword", task_group=org_task_group)
+            task2 = Task(name="Organize by file extension", task_group=org_task_group)
+            task3 = Task(name="Remove empty folders", task_group=cln_task_group)
+            task4 = Task(name="Empty trash", task_group=cln_task_group)
+
+            session.add_all([task1, task2, task3, task4])
     
     def _seed_data(self):
-        with self.session_scope() as session:
-            if session.query(TaskGroup).count() == 0:
-                session.add_all(
-                    [
-                        TaskGroup(name="Organize"), 
-                        TaskGroup(name="Cleanup"), 
-                        TaskGroup(name="Backup"), 
-                        TaskGroup(name="Undo")
-                    ]
-                )
-
-            if session.query(Task).count() == 0:
-                org_task_group = session.query(TaskGroup).filter_by(name="Organize").first()
-                cln_task_group = session.query(TaskGroup).filter_by(name="Cleanup").first()
-
-                task1 = Task(name="Organize by a tag/name", task_group=org_task_group)
-                task2 = Task(name="Organize by file type/extension", task_group=org_task_group)
-                task3 = Task(name="Remove empty folders", task_group=cln_task_group)
-                task4 = Task(name="Empty trash", task_group=cln_task_group)
-                
-                session.add_all([task1, task2, task3, task4])
-
-            session.commit()
+        try:
+            with self.session_scope() as session:
+                self._seed_task_groups(session)
+                self._seed_tasks(session)
+        except Exception as e:
+            logger.error(f"Error seeding initial data: {e}")
+            raise
 
         

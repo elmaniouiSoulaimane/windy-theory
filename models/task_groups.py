@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
 
-from .base import Base
+from managers.database import Base
 
 class TaskGroup(Base):
     __tablename__ = "task_groups"
