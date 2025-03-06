@@ -1,21 +1,34 @@
-import os
-
+from typing import Optional
 from sqlalchemy import Column, Integer, DateTime, ForeignKey, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-
+import logging
 
 from managers.database import Base
 from .entries import Entry
 from .users import User
 from .tasks import Task
+from typing import Optional
+
+from sqlalchemy import Column, Integer, DateTime, ForeignKey, String
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
+from managers.database import Base
+from .entries import Entry
+from .tasks import Task
+from .users import User
+
+logger = logging.getLogger(__name__)
+
 
 class Operation(Base):
     __tablename__ = "operations"
 
     id = Column(Integer, primary_key=True)
     created_at = Column(DateTime, default=func.now())  # Automatically set current timestamp
-    keyword = Column(String, nullable=False) # represents the tag or file type to be used for organization
+    keyword = Column(String, nullable=True)
+    ext = Column(String, nullable=True)
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="operations")
@@ -27,7 +40,12 @@ class Operation(Base):
     entry = relationship("Entry", back_populates="operations")
     
 
-    def __init__(self, task, entry, user):
+    def __init__(self, task, entry, user, keyword: Optional[str] = None, ext: Optional[str] = None):
+        if keyword is None and ext is None:
+            logger.warning(f"Attempt to insert an operation with keyword and ext values as Null!")
+
+        self.keyword = keyword
+        self.ext = ext
         self.task = task
         self.entry = entry
         self.user = user

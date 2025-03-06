@@ -3,14 +3,16 @@ import logging
 import os
 import time
 from typing import Optional
+import logging
 
 import pyinputplus as pyip
 
 from Router import Router
-from managers.database import DatabaseManager
 from managers.entry import EntryManager
+from models import Operation
 from models.entries import Entry
 
+logger = logging.getLogger(__name__)
 
 class OrganizationType(enum.Enum):
     BY_KEYWORD = "keyword"
@@ -134,13 +136,15 @@ class Organizer:
                         # creating a directory for the tag
                         keyword_dir = EntryManager.make_dir(keyword)
 
-                        source = os.path.join(os.getcwd(), entry)
+                        origin = os.path.join(os.getcwd(), entry)
                         destination = os.path.join(keyword_dir, entry)
 
-                        os.rename(source, destination)
+                        os.rename(origin, destination)
+                        logger.info(f"Entry '{entry}' has been moved from '{origin}' to '{destination}'")
 
                         entry_type = EntryManager.get_type(entry)
-                        Entry.create(name=entry, ext=entry_type, origin=source, destination=destination)
+                        new_entry = Entry.create(name=entry, ext=entry_type, origin=origin, destination=destination)
+                        new_operation = Operation
 
                     except OSError as e:
                         logging.error(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")
