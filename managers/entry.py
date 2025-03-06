@@ -188,7 +188,7 @@ class EntryManager:
                 return None
 
     @staticmethod
-    def get_exact_type(entry: str) -> Union[str | None]:
+    def get_type(entry: str) -> Union[str | None]:
         for dict in EntryManager.FILE_TYPES_AND_EXTENSIONS:
             if any(
                     ((extension[0] in entry) or (extension[0].upper() in entry))

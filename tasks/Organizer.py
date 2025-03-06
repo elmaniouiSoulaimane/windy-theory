@@ -124,25 +124,27 @@ class Organizer:
         Raises:
             Exception: If an error occurs during the organization process.
         """
-        # input must not be complex chars
+        # TODO: input value must comply with the filesystem's naming conventions
         keyword = pyip.inputStr("(i) Type-in the keyword: ")
 
         for entry in os.listdir():
-            if keyword in entry:
-                try: # moving the found entries to the tag directory
-                    # creating a directory for the tag
-                    keyword_dir = EntryManager.make_dir(keyword)
+            if os.path.isfile(entry):
+                if keyword in entry:
+                    try: # moving the found entries to the tag directory
+                        # creating a directory for the tag
+                        keyword_dir = EntryManager.make_dir(keyword)
 
-                    source = os.path.join(os.getcwd(), entry)
-                    destination = os.path.join(keyword_dir, entry)
+                        source = os.path.join(os.getcwd(), entry)
+                        destination = os.path.join(keyword_dir, entry)
 
-                    os.rename(source, destination)
+                        os.rename(source, destination)
 
-                    Entry.create(org_type=str(OrganizationType.BY_KEYWORD), entry_name=entry, origin=source, destination=destination)
+                        entry_type = EntryManager.get_type(entry)
+                        Entry.create(name=entry, ext=entry_type, origin=source, destination=destination)
 
-                except OSError as e:
-                    logging.error(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")
-                    raise OSError(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")
+                    except OSError as e:
+                        logging.error(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")
+                        raise OSError(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")
 
     @staticmethod
     def organise_by_extension():
@@ -159,10 +161,8 @@ class Organizer:
             Exception: If an error occurs during the organization process.
         """
         for entry in os.listdir():
-            source = os.path.join(os.getcwd(), entry)
-
             if os.path.isfile(entry):
-                entry_type = EntryManager.get_exact_type(entry)
+                entry_type = EntryManager.get_type(entry)
 
                 if entry_type:
                     type_dir = EntryManager.make_dir(entry_type)
@@ -172,10 +172,10 @@ class Organizer:
                     destination = os.path.join(other_dir, entry)
 
                 try:
+                    source = os.path.join(os.getcwd(), entry)
                     os.rename(source, destination)
 
-                    DatabaseManager.save(org_type=str(OrganizationType.BY_EXTENSION), entry_name=entry, origin=source,
-                                         destination=destination)
+                    Entry.create(name=entry, ext=entry_type, origin=source, destination=destination)
                 except OSError as e:
                     logging.error(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
                     raise OSError(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
