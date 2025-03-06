@@ -1,4 +1,6 @@
 import os
+from typing import Union
+
 
 class EntryManager:
     DEFAULT_DIRS = [
@@ -186,7 +188,7 @@ class EntryManager:
                 return None
 
     @staticmethod
-    def get_exact_type(entry):
+    def get_exact_type(entry: str) -> Union[str | None]:
         for dict in EntryManager.FILE_TYPES_AND_EXTENSIONS:
             if any(
                     ((extension[0] in entry) or (extension[0].upper() in entry))
@@ -195,7 +197,7 @@ class EntryManager:
         return None
     
     @staticmethod
-    def get_general_type(entry)-> str:
+    def get_general_type(entry) -> str:
         if os.path.isfile(entry):
             return "file"
         elif os.path.isdir(entry):
