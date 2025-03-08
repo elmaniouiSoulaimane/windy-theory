@@ -144,7 +144,7 @@ class Organizer:
 
                         entry_type = EntryManager.get_type(entry)
                         new_entry = Entry.create(name=entry, ext=entry_type, origin=origin, destination=destination)
-                        new_operation = Operation
+                        new_operation = Operation.create(keyword=keyword, entry_id=new_entry.id)
 
                     except OSError as e:
                         logging.error(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")

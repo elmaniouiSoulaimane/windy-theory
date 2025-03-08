@@ -14,22 +14,18 @@ class Entry(Base):
 
     operations = relationship("Operation", back_populates="entry")
 
-    def __init__(self, name, ext, origin, destination):
-        self.name = name
-        self.ext = ext
-        self.origin = origin
-        self.destination = destination
-
     def __repr__(self):
-        return f"Entry(id={self.id}, name={self.name}, ext={self.ext}, origin={self.origin}, destination={self.destination})"
+        return f"<Entry(id={self.id}, name={self.name}, ext={self.ext}, origin={self.origin}, destination={self.destination})>"
 
     @staticmethod
-    def get(name: Optional[str] = None, ext: Optional[str] = None, origin: Optional[str] = None,
+    def get(id: Optional[int] = None, name: Optional[str] = None, ext: Optional[str] = None, origin: Optional[str] = None,
             destination: Optional[str] = None) -> Optional['Entry']:
         db_manager = DatabaseManager()
         with db_manager.session_scope() as session:
             query = session.query(Entry)
 
+            if id is not None:
+                query = query.filter(Entry.id == id)
             if name is not None:
                 query = query.filter(Entry.name == name)
             if ext is not None:

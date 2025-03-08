@@ -69,10 +69,10 @@ class DatabaseManager:
             org_task_group = session.query(TaskGroup).filter_by(name="Organize").first()
             cln_task_group = session.query(TaskGroup).filter_by(name="Cleanup").first()
 
-            task1 = Task(name="Organize by keyword", task_group=org_task_group)
-            task2 = Task(name="Organize by file extension", task_group=org_task_group)
-            task3 = Task(name="Remove empty folders", task_group=cln_task_group)
-            task4 = Task(name="Empty trash", task_group=cln_task_group)
+            task1 = Task(name="Organize by keyword", task_group_id=org_task_group.id)
+            task2 = Task(name="Organize by file extension", task_group_id=org_task_group.id)
+            task3 = Task(name="Remove empty folders", task_group_id=cln_task_group.id)
+            task4 = Task(name="Empty trash", task_group_id=cln_task_group.id)
 
             session.add_all([task1, task2, task3, task4])
     
