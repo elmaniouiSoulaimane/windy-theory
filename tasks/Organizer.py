@@ -10,7 +10,7 @@ import pyinputplus as pyip
 from Router import Router
 from managers.entry import EntryManager
 from models import Operation
-from models.entries import Entry
+from models.entry import Entry
 
 logger = logging.getLogger(__name__)
 
