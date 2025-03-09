@@ -3,13 +3,12 @@ import logging
 import os
 import time
 from typing import Optional
-import logging
 
 import pyinputplus as pyip
 
 from Router import Router
 from managers.entry import EntryManager
-from models import Operation
+from models import Operation, User, Task
 from models.entry import Entry
 
 logger = logging.getLogger(__name__)
@@ -36,6 +35,28 @@ class Organizer:
         self.target_dir_name: Optional[str] = None
         self.target_path: Optional[str] = None
         self.org_type: Optional[int] = None
+
+    @staticmethod
+    def create_operation(entry: str,
+                         origin: Optional[str] = None,
+                         destination: Optional[str] = None,
+                         keyword: Optional[str] = None,
+                         ext: Optional[str] = None
+                         ):
+        if keyword is None and ext is None:
+            raise ValueError("Either keyword or extension must be provided")
+
+        user = User.get(name=os.environ.get('USER'))
+
+        if ext is not None:
+            new_entry = Entry.create(name=entry, ext=ext, origin=origin, destination=destination)
+            task = Task.get(name="Organize by file extension")
+            Operation.create(ext=ext, user_id=user.id, task_id=task.id, entry_id=new_entry.id)
+
+        ext = EntryManager.get_type(entry)
+        new_entry = Entry.create(name=entry, ext=ext, origin=origin, destination=destination)
+        task = Task.get(name="Organize by keyword")
+        Operation.create(keyword=keyword, user_id=user.id, task_id=task.id, entry_id=new_entry.id)
         
     def start(self):
         """
@@ -142,9 +163,7 @@ class Organizer:
                         os.rename(origin, destination)
                         logger.info(f"Entry '{entry}' has been moved from '{origin}' to '{destination}'")
 
-                        entry_type = EntryManager.get_type(entry)
-                        new_entry = Entry.create(name=entry, ext=entry_type, origin=origin, destination=destination)
-                        new_operation = Operation.create(keyword=keyword, entry_id=new_entry.id)
+                        Organizer.create_operation(entry=entry, keyword=keyword, origin=origin, destination=destination)
 
                     except OSError as e:
                         logging.error(f"Error occurred while organizing {entry}, by {keyword} tag, details: {str(e)}")
@@ -176,10 +195,10 @@ class Organizer:
                     destination = os.path.join(other_dir, entry)
 
                 try:
-                    source = os.path.join(os.getcwd(), entry)
-                    os.rename(source, destination)
+                    origin = os.path.join(os.getcwd(), entry)
+                    os.rename(origin, destination)
 
-                    Entry.create(name=entry, ext=entry_type, origin=source, destination=destination)
+                    Organizer.create_operation(entry=entry, ext=entry_type, origin=origin, destination=destination)
                 except OSError as e:
                     logging.error(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
                     raise OSError(f"Error occurred while organizing {entry} by {entry_type} type: {e}")
