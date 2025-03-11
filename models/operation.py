@@ -3,7 +3,7 @@ import logging
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import relationship
 
-from managers.database import Base
+from .base import Base
 
 logger = logging.getLogger(__name__)
 
