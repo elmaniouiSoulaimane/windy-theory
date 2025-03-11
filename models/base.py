@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import List, Optional, TypeVar, Type
 
 from sqlalchemy import Column, Integer, inspect, DateTime

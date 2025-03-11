@@ -8,8 +8,10 @@ import pyinputplus as pyip
 
 from Router import Router
 from managers.entry import EntryManager
-from models import Operation, User, Task
 from models.entry import Entry
+from models.operation import Operation
+from models.task import Task
+from models.user import User
 
 logger = logging.getLogger(__name__)
 

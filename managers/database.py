@@ -5,8 +5,6 @@ from threading import Lock
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-from models import TaskGroup, Task
-
 Base = declarative_base()
 logger = logging.getLogger(__name__)
 
@@ -55,6 +53,7 @@ class DatabaseManager:
 
     @staticmethod
     def _seed_task_groups(session) -> None:
+        from models.task_group import TaskGroup
         if session.query(TaskGroup).count() == 0:
             session.add_all([
                 TaskGroup(name="Organize"),
@@ -65,6 +64,8 @@ class DatabaseManager:
 
     @staticmethod
     def _seed_tasks(session):
+        from models.task import Task
+        from models.task_group import TaskGroup
         if session.query(Task).count() == 0:
             org_task_group = session.query(TaskGroup).filter_by(name="Organize").first()
             cln_task_group = session.query(TaskGroup).filter_by(name="Cleanup").first()
