@@ -5,7 +5,7 @@ from .base import Base
 
 
 class TaskGroup(Base):
-    __tablename__ = "task_groups"
+    __tablename__ = "task_group"
 
     name = Column(String)
     task = relationship("Task", back_populates="task_group")

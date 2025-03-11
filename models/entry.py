@@ -5,7 +5,7 @@ from .base import Base
 
 
 class Entry(Base):
-    __tablename__ = "entries"
+    __tablename__ = "Entry"
 
     name = Column(String)
     ext = Column(String)
