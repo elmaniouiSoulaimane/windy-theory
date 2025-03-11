@@ -1,23 +1,30 @@
 import logging
+import os
 from contextlib import contextmanager
 from threading import Lock
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker
 
-Base = declarative_base()
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
     _instance = None
     _lock = Lock()
 
-    def __new__(cls, db_url: str = "sqlite:///history.db"):
+    def __new__(cls):
         if not cls._instance:
             with cls._lock:
                 # Double-checked locking
                 if not cls._instance:
                     cls._instance = super().__new__(cls)
+                    current_dir = os.path.dirname(os.path.abspath(__file__))  # Get directory of the current script file
+                    parent_dir = os.path.dirname(current_dir)  # Go up one level to parent directory
+                    db_path = os.path.join(parent_dir, "data", "windy-theory.db")  #Use sibling 'data' directory
+                    os.makedirs(os.path.dirname(db_path), exist_ok=True)  # Ensure directory exists
+                    # Convert to SQLite URL format
+                    db_url = f"sqlite:///{db_path}"
+
                     cls._instance._init_db(db_url)
 
         return cls._instance
@@ -48,8 +55,9 @@ class DatabaseManager:
             session.close()
 
     def _create_tables(self):
+        from models.base import SQLAlchemyBase
         """Create all tables if they don't exist."""
-        Base.metadata.create_all(self._engine)
+        SQLAlchemyBase.metadata.create_all(self._engine)
 
     @staticmethod
     def _seed_task_groups(session) -> None:
